@@ -1,0 +1,116 @@
+name: Build and Sign
+
+# 这个工作流同时负责两件事：
+#   1) 在 Windows 上从源码完整重建安装包（SignPath Foundation 要求构建全自动、可审查）
+#   2) 提交给 SignPath 换取免费的 OV 代码签名（未配置密钥时自动跳过，不会把流程跑断）
+#
+# 为什么要 CI：SignPath 明确要求"构建过程完全自动化"。
+# 它要把"仓库里的源码 → 学生手上的 exe"这条链证明给你看，
+# 本地手工编译再上传是不被接受的（否则就等于"谁都能拿 OV 证书签任意程序"）。
+#
+# 需要配置的仓库 Secrets（Settings → Secrets and variables → Actions）：
+#   SIGNPATH_API_TOKEN          SignPath 后台创建，权限选 Submitter
+#   SIGNPATH_ORGANIZATION_ID    后台 URL 里那串 GUID
+#   SIGNPATH_PROJECT_SLUG       项目标识
+#   SIGNPATH_SIGNING_POLICY_SLUG 通常是 release-signing
+# 一个都没配也能跑：只是产物保持未签名。
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build on Windows
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Visual Studio 2022 build tools
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build (x64 + x86 + installer)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell -NoProfile -ExecutionPolicy Bypass -File tools\rebuild.ps1
+          if ($LASTEXITCODE -ne 0) { throw "构建失败，退出码 $LASTEXITCODE" }
+
+      - name: Collect installers
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          # 只把待签名的可执行文件交给 SignPath。
+          # 签名是逐文件的：安装器内嵌的主程序、卸载器都在安装包内部，
+          # 它们在【本机安装时】才被释放出来，所以每个二进制都要单独签，
+          # 否则 Smart App Control 会因为执行链上有未签名项而整体拦截。
+          Copy-Item '发布包\对口升学练习系统_安装程序.exe' out\ -Force
+          Copy-Item '发布包\ExamDlgProj.exe'            out\ -Force
+          Copy-Item '发布包\ExamDlgProj_32位.exe'       out\ -Force
+          Copy-Item '安装程序\Uninst.exe'               out\ -Force
+          Get-ChildItem out | Format-Table Name, Length
+
+      # ---- 以下是签名环节：没配密钥就跳过，产物仍为未签名 ----
+      - name: Check SignPath configuration
+        id: signpath
+        shell: pwsh
+        run: |
+          $has = [bool]($env:SIGNPATH_API_TOKEN -and $env:SIGNPATH_ORGANIZATION_ID)
+          "enabled=$has" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          if ($has) {
+            "SignPath 已配置，产物将被签名。"
+          } else {
+            "SignPath 未配置，产物保持未签名（不会中断构建）。"
+          }
+
+      - name: Submit to SignPath for signing
+        if: steps.signpath.outputs.enabled == 'true'
+        uses: signpath/github-action-submit-signing-request@v2.3
+        with:
+          apiToken: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organizationId: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          projectSlug: ${{ secrets.SIGNPATH_PROJECT_SLUG }}
+          signingPolicySlug: ${{ secrets.SIGNPATH_SIGNING_POLICY_SLUG }}
+
+      - name: Download signed binaries
+        if: steps.signpath.outputs.enabled == 'true'
+        uses: signpath/github-action-get-signed-artifact@v1.2
+
+      # 拿到签名产物后必须复验：SignPath 有可能因为策略不匹配而没签，
+      # 静默通过"未签名"这一步是最危险的 —— 会被当成已签名发布出去。
+      - name: Verify signatures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bad = 0
+          Get-ChildItem out -Filter *.exe | ForEach-Object {
+            $sig = Get-AuthenticodeSignature -LiteralPath $_.FullName
+            $ts  = if ($sig.TimeStamperCertificate) { '有时间戳' } else { '缺时间戳' }
+            if ($sig.Status -eq 'Valid') {
+              Write-Host "[OK]   $($_.Name)  $($sig.SignerCertificate.Subject)  $ts"
+            } else {
+              Write-Host "[未签] $($_.Name)  状态=$($sig.Status)"
+              $bad++
+            }
+          }
+          # 未签名不算失败（还没配 SignPath 时是正常状态），
+          # 但必须在日志里显式列出来，不能让人误以为已经签过了。
+          if ($bad -gt 0) { Write-Warning "$bad 个文件未签名。若已配置 SignPath，请检查其拒绝日志。" }
+          Write-Host "SHA256 清单："
+          Get-ChildItem out -Filter *.exe | Get-FileHash -Algorithm SHA256 |
+            Format-Table Hash, @{n='File';e={Split-Path $_.Path -Leaf}} -AutoSize
+
+      - name: Upload unsigned build (fallback)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: out/*.exe
+          if-no-files-found: error

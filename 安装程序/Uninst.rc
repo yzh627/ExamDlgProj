@@ -1,0 +1,44 @@
+﻿#include "resource.h"
+#include <windows.h>
+
+/////////////////////////////////////////////////////////////////////////////
+// 图标（和安装程序同一个图标：都是这个软件的东西，一眼能认出来）
+
+IDI_SETUP   ICON    "..\\res\\Setup.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+// 版本信息
+//
+// 这个 exe 是"专用卸载程序"：和安装程序同一份源码（Setup.cpp）编出来的，
+// 编译时带 /DPURE_UNINSTALL，只干卸载一件事，所以这里不内嵌主程序/题库。
+// 效果：体积从 5.3 MB 降到 200 多 KB —— 原来安装目录里 64% 的体积
+// 都是"安装程序副本"顶出来的。
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION APP_VER_D0,APP_VER_D1,APP_VER_D2,APP_VER_D3
+ PRODUCTVERSION APP_VER_D0,APP_VER_D1,APP_VER_D2,APP_VER_D3
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", APP_AUTHOR_STR
+            VALUE "FileDescription", "对口升学练习系统 卸载程序"
+            VALUE "FileVersion", APP_VERSION_DOTS_A
+            VALUE "InternalName", "Uninst.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2026"
+            VALUE "OriginalFilename", "卸载.exe"
+            VALUE "ProductName", APP_PRODUCT_STR
+            VALUE "ProductVersion", APP_VERSION_DOTS_A
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END

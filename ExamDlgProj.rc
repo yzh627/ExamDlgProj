@@ -1,0 +1,231 @@
+﻿// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+#include "afxres.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#ifndef APSTUDIO_INVOKED
+#include "targetver.h"
+#endif
+#include "windows.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(简体，中国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(65001)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#ifndef APSTUDIO_INVOKED\r\n"
+    "#include ""targetver.h""\r\n"
+    "#endif\r\n"
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_EXAMDLGPROJ_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 383
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 272
+    END
+    IDD_PRACTICE_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 733
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 438
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// 对话框
+//
+
+IDD_EXAMDLGPROJ_DIALOG DIALOGEX 0, 0, 430, 364
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "河北对口升学计算机程序设计练习系统"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    GROUPBOX        "题库列表（双击题目可直接开始练习，支持难度/真题筛选，可拖动窗口右下角放大）",IDC_GROUP_LIST,7,7,416,240
+    LISTBOX         IDC_LIST_QUESTION,17,22,396,204,LBS_NOINTEGRALHEIGHT | LBS_NOTIFY | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "共 0 题",IDC_STATIC_COUNT,17,230,396,10
+    LTEXT           "难度筛选：",IDC_LABEL_LEVEL,17,259,50,10
+    CONTROL         "简单",IDC_CHK_SIMPLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,68,258,40,11
+    CONTROL         "中等",IDC_CHK_MEDIUM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,110,258,40,11
+    CONTROL         "困难",IDC_CHK_HARD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,152,258,40,11
+    PUSHBUTTON      "全选",IDC_BTN_ALL_LEVEL,196,256,40,16
+    CONTROL         "只看真题",IDC_CHK_REAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,240,258,60,11
+    PUSHBUTTON      "随机抽题并开始",IDC_BTN_RANDOM,306,254,94,22
+    LTEXT           "考试时长(分钟)：",IDC_LABEL_TIME,17,286,80,10
+    EDITTEXT        IDC_EDIT_TIME,100,283,50,18,ES_AUTOHSCROLL
+    LTEXT           "当前选中：--",IDC_STATIC_SEL,160,286,263,10
+    PUSHBUTTON      "开始练习",IDC_BTN_START,7,304,416,30,BS_DEFPUSHBUTTON
+    PUSHBUTTON      "查看成绩表",IDC_BTN_SCORETABLE,7,338,72,14,BS_FLAT
+    PUSHBUTTON      "说明",IDC_BTN_ABOUT,300,338,40,14,BS_FLAT
+    PUSHBUTTON      "给作者回血",IDC_BTN_SUPPORT,343,338,80,14,BS_FLAT
+END
+
+IDD_ABOUT_INFO DIALOGEX 0, 0, 300, 250
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "说明 - 河北对口升学计算机程序设计练习系统"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_STATIC_ABOUT_TEXT,12,10,276,212,ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL | NOT WS_TABSTOP
+    PUSHBUTTON      "关闭",IDCANCEL,110,228,80,18
+END
+
+IDD_SUPPORT_DLG DIALOGEX 0, 0, 220, 292
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "给作者回血"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "如果这个小工具帮到了你，可以扫码请作者喝杯奶茶，谢谢！",IDC_STATIC_SUPPORT_TIP,12,8,196,30
+    PUSHBUTTON      "关闭",IDCANCEL,70,266,80,18
+END
+
+IDD_PRACTICE_DLG DIALOGEX 0, 0, 520, 400
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "河北对口升学计算机程序设计练习系统"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "系统剩余时间: 00:00:00",IDC_STATIC_TIMER,20,8,160,12
+    GROUPBOX        "程序设计题",IDC_GROUP_LEFT,7,28,220,365
+    CONTROL         "",IDC_RICH_FRAME,"RICHEDIT20W",ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | WS_VSCROLL | WS_HSCROLL | 0x80,17,42,200,350
+    GROUPBOX        "题目与答题",IDC_GROUP_RIGHT,233,28,280,365
+    EDITTEXT        IDC_STATIC_QUESTION,243,42,260,162,ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL | WS_BORDER | NOT WS_TABSTOP
+    LTEXT           "答题区域，请在此输入",IDC_STATIC_LABEL,243,208,120,12
+    CONTROL         "",IDC_RICH_CODE,"RICHEDIT20W",ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_WANTRETURN | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP | 0x80,243,224,260,102
+    PUSHBUTTON      "保存",IDC_BTN_SAVE,243,332,50,26
+    PUSHBUTTON      "重置",IDC_BTN_RESET,298,332,50,26
+    PUSHBUTTON      "恢复已保存答案",IDC_BTN_RESTORE,353,332,100,26
+    PUSHBUTTON      "VS调试运行",IDC_BTN_DEBUG,243,364,88,26
+    PUSHBUTTON      "提交判题",IDC_BTN_SUBMIT,337,364,88,26
+    PUSHBUTTON      "返回主界面",IDC_BTN_BACK,431,364,72,26
+END
+
+IDD_SCORE_DLG DIALOGEX 0, 0, 300, 220
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "判题结果"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "本题得分：0 / 12",IDC_STATIC_SCORE,20,15,260,32,SS_CENTER
+    EDITTEXT        IDC_STATIC_DETAIL,20,55,260,110,ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL | NOT WS_TABSTOP
+    PUSHBUTTON      "继续做题",IDOK,55,175,85,30
+    PUSHBUTTON      "返回主界面",IDC_BTN_BACK_FROM_SCORE,160,175,85,30
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// 图标
+//
+
+// 带有较低分辨率的图标使用单独的图像。
+IDR_MAINFRAME           ICON                    "res\\ExamDlgProj.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// 版本信息
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", "一个中职生"
+            VALUE "FileDescription", "河北对口升学计算机程序设计练习系统"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "ExamDlgProj.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2026 一个中职生"
+            VALUE "OriginalFilename", "ExamDlgProj.exe"
+            VALUE "ProductName", "河北对口升学计算机程序设计练习系统"
+            VALUE "ProductVersion", "1.0.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// 字符串表
+//
+
+STRINGTABLE
+BEGIN
+    IDS_ABOUTBOX            "&关于本软件..."
+    IDP_OLE_INIT_FAILED     "OLE 初始化失败。如果继续，应用程序可能无法正常运行。"
+END
+
+#endif    // 中文(简体，中国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// 从 TEXTINCLUDE 3 生成。
+//
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // 不是 APSTUDIO_INVOKED

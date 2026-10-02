@@ -1,0 +1,15 @@
+A anchor 题库信息 header 命中 1 次
+B DoSilentInstall 已插入 ResolveInstallDir + FINAL_DIR + last_dir.txt
+C 界面版 IDOK 已插入 ResolveInstallDir + 回显/提示
+D 两处旧位置清理条件已改用 ShouldCleanupOldDir
+
+before size=63026  after size=72465  delta=+9439
+before sha256=5eb2efa8d1cb2559d71b27c994e8b1d977e9adea3be619b6524ebf3c8c58d5f1
+after  sha256=a90d220de882276e57a6a201b283121e656134a99f88dcefb364a8a960be3445
+  count GetDirDriveRoot                    = 2
+  count IsDriveUsable                      = 3
+  count ShouldCleanupOldDir                = 3
+  count ResolveInstallDir                  = 5
+  count WriteLastDirFile                   = 2
+  count FINAL_DIR=                         = 2
+  count ShouldCleanupOldDir(szOld, szDir)  = 2

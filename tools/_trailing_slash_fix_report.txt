@@ -1,0 +1,10 @@
+1 NormalizeDirForCompare/SameDir 已插入
+2 ShouldCleanupOldDir 改用 SameDir
+3 ResolveInstallDir 改用 SameDir
+
+size 72462 -> 73829  delta +1367
+sha 60186606ea47ba6d -> 03b7e116af87800a
+  count static void NormalizeDirForCompare     = 1
+  count static BOOL SameDir(                   = 1
+  count SameDir(pszOld, pszFinal)              = 1
+  count SameDir(szOld, szCur)                  = 1

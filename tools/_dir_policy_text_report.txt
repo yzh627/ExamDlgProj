@@ -1,0 +1,5 @@
+DOC (使用说明.txt)  size 14259 -> 15065  delta +806
+BAT (静默安装.bat) size 15291 -> 16059  delta +768
+
+DOC sha256=cec47af1b1a62c69aaf0445ff91592d00d605a254ba08ba74c413763c3d84b5e
+BAT sha256=9ebcfebe57e2160dccc1a343b0ba4b2ab1d5c5f3f3697d577bdebf1a2b13f2f7

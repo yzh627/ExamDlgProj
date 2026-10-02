@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <!-- Keep this file pure ASCII: it is merged by link.exe and embedded by mt.exe,
+       and any non-ASCII byte risks being re-encoded with the local code page.
+       Design notes live in the project docs, not in here. -->
+
+  <!-- Common Controls 6.0: without this the UI falls back to the classic Win95 look -->
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*" />
+    </dependentAssembly>
+  </dependency>
+
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+
+  <!-- Declare supported OS versions. Without this the app is treated as a
+       Windows 8 application and some APIs take a compatibility path. -->
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <!-- Windows 10 / 11 -->
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
+      <!-- Windows 8.1 -->
+      <supportedOS Id="{1f676c76-80e1-4239-95bb-83d0f6d0da78}" />
+      <!-- Windows 8 -->
+      <supportedOS Id="{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}" />
+      <!-- Windows 7 -->
+      <supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}" />
+    </application>
+  </compatibility>
+
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <!-- High DPI. Without these two entries the process is treated as legacy:
+           Windows renders the whole window at 100% and then bitmap-stretches it
+           to the real scale factor, which is exactly what makes text blurry. -->
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor</dpiAwareness>
+
+      <!-- Allow paths longer than 260 chars (also requires the OS long-path opt-in). -->
+      <longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">true</longPathAware>
+
+      <!-- activeCodePage=UTF-8 is deliberately NOT set here.
+           The app writes answer .cs files through CP_ACP for csc.exe to compile,
+           and decodes judge output with the local code page. Switching this
+           process to UTF-8 would mismatch a GBK csc.exe on student machines and
+           break Chinese output, so following the system code page is correct. -->
+    </windowsSettings>
+  </application>
+</assembly>

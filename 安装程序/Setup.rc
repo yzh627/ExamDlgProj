@@ -1,0 +1,73 @@
+﻿#include "resource.h"
+#include <windows.h>
+
+/////////////////////////////////////////////////////////////////////////////
+// 图标
+
+IDI_SETUP   ICON    "..\\res\\Setup.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+// 安装程序界面
+
+IDD_SETUP DIALOGEX 0, 0, 300, 204
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "河北对口升学计算机程序设计练习系统 - 安装"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "提交即判分 · 与省考场同环境",IDC_STATIC_BRIEF,14,10,272,12
+    LTEXT           "安装位置（默认即可，也可以自己改）：",IDC_STATIC,14,30,272,10
+    EDITTEXT        IDC_EDIT_DIR,14,42,220,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "浏览...",IDC_BTN_BROWSE,240,42,46,14
+    CONTROL         "创建桌面快捷方式",IDC_CHK_DESKTOP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,66,120,10
+    CONTROL         "创建开始菜单快捷方式",IDC_CHK_STARTMENU,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,140,66,146,10
+    CONTROL         "安装完成后立即运行程序",IDC_CHK_RUN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,82,146,10
+    LTEXT           "安装内容：主程序 + 加密题库，无需其它组件。",IDC_STATIC,14,98,272,11
+    LTEXT           "题库已内嵌，装完即用",IDC_STATIC_INFO,14,110,272,11
+    LTEXT           "",IDC_STATIC_STATUS,14,128,272,24
+    LTEXT           "",IDC_STATIC_AUTHOR,14,158,272,10
+    PUSHBUTTON      "开始安装",IDOK,152,178,64,20,BS_DEFPUSHBUTTON
+    PUSHBUTTON      "退出",IDCANCEL,222,178,64,20
+END
+
+/////////////////////////////////////////////////////////////////////////////
+// 内嵌文件：主程序 / 清单 / 加密题库
+
+IDR_PAYLOAD_EXE         RCDATA  "..\\x64\\Release\\ExamDlgProj.exe"
+IDR_PAYLOAD_EXE32       RCDATA  "..\\x86\\Release\\ExamDlgProj.exe"
+IDR_PAYLOAD_MANIFEST    RCDATA  "..\\x64\\Release\\ExamDlgProj.exe.manifest"
+IDR_PAYLOAD_BANK        RCDATA  "..\\questions.dat"
+IDR_PAYLOAD_SUPPORT     RCDATA  "..\\support.png"
+IDR_PAYLOAD_ABOUT       RCDATA  "..\\说明.txt"
+IDR_PAYLOAD_UNINST       RCDATA  "Uninst.exe"
+
+/////////////////////////////////////////////////////////////////////////////
+// 版本信息
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION APP_VER_D0,APP_VER_D1,APP_VER_D2,APP_VER_D3
+ PRODUCTVERSION APP_VER_D0,APP_VER_D1,APP_VER_D2,APP_VER_D3
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", APP_AUTHOR_STR
+            VALUE "FileDescription", "对口升学练习系统 安装程序"
+            VALUE "FileVersion", APP_VERSION_DOTS_A
+            VALUE "InternalName", "Setup.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2026"
+            VALUE "OriginalFilename", "对口升学练习系统_安装程序.exe"
+            VALUE "ProductName", APP_PRODUCT_STR
+            VALUE "ProductVersion", APP_VERSION_DOTS_A
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
