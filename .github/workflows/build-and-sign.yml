@@ -39,50 +39,55 @@ jobs:
       - name: Install C++ workload and Windows SDK
         # 这一步是必须的：setup-msbuild 只装 MSBuild 本体，不含 C++ 编译器。
         # 少了它，rebuild.ps1 里的 Find-VcTools 会返回 null 并直接抛
-        # "[错误] 没找到 Visual Studio 的编译工具或 Windows SDK"，
-        # 而报这个错看不出是"工具没装"造成的，很容易误判。
+        # "[错误] 没找到 Visual Studio 的编译工具或 Windows SDK"。
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $log = Join-Path $env:GITHUB_WORKSPACE 'install-vs.log'
-          # 用 vs_installer 静默装 C++ 桌面开发工作负载 + Windows 11 SDK
-          $args = @(
+          $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+
+          # ★ 必须显式装 Windows SDK 组件，不能只靠 --includeRecommended。
+          #   --includeRecommended 装出来的是 WDF（驱动开发包），
+          #   其 Include\wdf 下根本没有 mt.exe（清单工具），
+          #   而 rebuild.ps1 链接时要用 mt.exe 来内嵌 app.manifest，
+          #   找不到就直接抛错。
+          $rawArgs = @(
             'modify',
-            '--installPath', "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise",
+            '--installPath', 'C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise',
             '--add', 'Microsoft.VisualStudio.Workload.VCTools',
             '--add', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
-            '--add', 'Microsoft.VisualStudio.Component.VC.CMake.Project',
+            '--add', 'Microsoft.VisualStudio.Component.Windows11SDK.22621',
+            '--add', 'Microsoft.VisualStudio.Component.Windows11SDK.26100',
             '--includeRecommended',
-            '--noRestart',
-            '--quiet',
-            '--wait',
-            '--norestart'
-          )
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $installPath = & $vswhere -latest -products * `
+            '--noRestart', '--quiet', '--wait', '--norestart'
+          ) -join ' '
+
+          $already = & $vswhere -latest -products * `
             -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
             -property installationPath 2>$null
-          if (-not $installPath) {
-            Write-Host "未检测到带 C++ 的 VS，用 setup-msbuild 装到默认位置"
-            $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
-            $rawArgs = 'modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise" ' +
-                       '--add Microsoft.VisualStudio.Workload.VCTools ' +
-                       '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ' +
-                       '--includeRecommended --noRestart --quiet --wait --norestart'
+          if (-not $already) {
             $p = Start-Process -FilePath $setup -ArgumentList $rawArgs -Wait -PassThru -NoNewWindow
             if ($p.ExitCode -notin @(0, 3010)) {
-              throw "Visual Studio C++ 工作负载安装失败，退出码 $($p.ExitCode)。日志：$log"
+              throw "Visual Studio C++ 工作负载安装失败，退出码 $($p.ExitCode)"
             }
           } else {
-            Write-Host "已具备 C++ 工具链：$installPath"
+            Write-Host "已具备 C++ 工具链：$already"
           }
-          # 验证一遍：确认 cl.exe 真的能编译，别等 rebuild 才炸
+
+          # 验证：编译器与清单工具都要在，缺任何一个后面都跑不动。
+          # mt.exe 尤其重要 —— link.exe 用 /MANIFEST:EMBED 时会调它。
           $vcRoot = & $vswhere -latest -products * -property installationPath
-          $cl = Get-ChildItem -Path (Join-Path $vcRoot 'VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe') -ErrorAction SilentlyContinue |
-                Select-Object -First 1
-          if (-not $cl) { throw "C++ 编译器仍不可用（cl.exe 找不到）" }
+          $cl = Get-ChildItem -Path (Join-Path $vcRoot 'VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe') `
+                -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cl) { throw "C++ 编译器不可用（cl.exe 找不到）" }
           Write-Host "编译器就位：$($cl.FullName)"
-          & $cl.FullName 2>&1 | Select-Object -First 1 | Write-Host
+
+          $mt = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\mt.exe" `
+                -ErrorAction SilentlyContinue |
+                Where-Object { $_.FullName -notmatch '\\wdf\\' } |
+                Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $mt) { throw "清单工具 mt.exe 找不到（已排除 WDF 目录）。链接内嵌清单会失败。" }
+          Write-Host "清单工具就位：$($mt.FullName)"
 
       - name: Build (x64 + x86 + installer)
         shell: pwsh
@@ -100,10 +105,24 @@ jobs:
           # 签名是逐文件的：安装器内嵌的主程序、卸载器都在安装包内部，
           # 它们在【本机安装时】才被释放出来，所以每个二进制都要单独签，
           # 否则 Smart App Control 会因为执行链上有未签名项而整体拦截。
-          Copy-Item '发布包\对口升学练习系统_安装程序.exe' out\ -Force
-          Copy-Item '发布包\ExamDlgProj.exe'            out\ -Force
-          Copy-Item '发布包\ExamDlgProj_32位.exe'       out\ -Force
-          Copy-Item '安装程序\Uninst.exe'               out\ -Force
+          $wanted = @(
+            '发布包\对口升学练习系统_安装程序.exe',
+            '发布包\ExamDlgProj.exe',
+            '发布包\ExamDlgProj_32位.exe',
+            '安装程序\Uninst.exe'
+          )
+          $missing = @()
+          foreach ($w in $wanted) {
+            if (Test-Path $w) {
+              Copy-Item $w out\ -Force
+            } else {
+              Write-Host "缺失（构建可能失败）：$w"
+              $missing += $w
+            }
+          }
+          if ($missing.Count -gt 0) {
+            throw "构建产物不完整，缺 $($missing.Count) 个文件。看前面步骤的真实报错。"
+          }
           Get-ChildItem out | Format-Table Name, Length
 
       # ---- 以下是签名环节：没配密钥就跳过，产物仍为未签名 ----
@@ -152,6 +171,9 @@ jobs:
       # 拿到签名产物后必须复验：SignPath 有可能因为策略不匹配而没签，
       # 静默通过"未签名"这一步是最危险的 —— 会被当成已签名发布出去。
       - name: Verify signatures
+        # 目录为空就跳过，不要在这里抛错 —— 抛了会把签名问题
+        # 和构建问题混成一个失败，排查时分不清是谁的问题。
+        if: hashFiles('out/*.exe') != '' || hashFiles('signed/*.exe') != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -188,7 +210,12 @@ jobs:
             Format-Table Hash, @{n='File';e={Split-Path $_.Path -Leaf}} -AutoSize
 
       - name: Upload build artifacts
-        if: always()
+        # 注意：这里不能无条件用 always()。
+        # 构建失败时 out\ 里根本没有 exe，upload-artifact 会报
+        # "未发现带有该路径的文件：out/*.exe" 并把整个任务判为失败，
+        # 于是真正的构建错误被这条噪声盖住，排查时要绕一圈。
+        # 改成先判断目录存在且有文件，再上传。
+        if: always() && hashFiles('out/*.exe') != ''
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
