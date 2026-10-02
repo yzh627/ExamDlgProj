@@ -33,13 +33,62 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Visual Studio 2022 build tools
+      - name: Install Visual Studio 2022 with C++ toolchain
         uses: microsoft/setup-msbuild@v2
+
+      - name: Install C++ workload and Windows SDK
+        # 这一步是必须的：setup-msbuild 只装 MSBuild 本体，不含 C++ 编译器。
+        # 少了它，rebuild.ps1 里的 Find-VcTools 会返回 null 并直接抛
+        # "[错误] 没找到 Visual Studio 的编译工具或 Windows SDK"，
+        # 而报这个错看不出是"工具没装"造成的，很容易误判。
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:GITHUB_WORKSPACE 'install-vs.log'
+          # 用 vs_installer 静默装 C++ 桌面开发工作负载 + Windows 11 SDK
+          $args = @(
+            'modify',
+            '--installPath', "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise",
+            '--add', 'Microsoft.VisualStudio.Workload.VCTools',
+            '--add', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
+            '--add', 'Microsoft.VisualStudio.Component.VC.CMake.Project',
+            '--includeRecommended',
+            '--noRestart',
+            '--quiet',
+            '--wait',
+            '--norestart'
+          )
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $installPath = & $vswhere -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            -property installationPath 2>$null
+          if (-not $installPath) {
+            Write-Host "未检测到带 C++ 的 VS，用 setup-msbuild 装到默认位置"
+            $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+            $rawArgs = 'modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise" ' +
+                       '--add Microsoft.VisualStudio.Workload.VCTools ' +
+                       '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ' +
+                       '--includeRecommended --noRestart --quiet --wait --norestart'
+            $p = Start-Process -FilePath $setup -ArgumentList $rawArgs -Wait -PassThru -NoNewWindow
+            if ($p.ExitCode -notin @(0, 3010)) {
+              throw "Visual Studio C++ 工作负载安装失败，退出码 $($p.ExitCode)。日志：$log"
+            }
+          } else {
+            Write-Host "已具备 C++ 工具链：$installPath"
+          }
+          # 验证一遍：确认 cl.exe 真的能编译，别等 rebuild 才炸
+          $vcRoot = & $vswhere -latest -products * -property installationPath
+          $cl = Get-ChildItem -Path (Join-Path $vcRoot 'VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe') -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+          if (-not $cl) { throw "C++ 编译器仍不可用（cl.exe 找不到）" }
+          Write-Host "编译器就位：$($cl.FullName)"
+          & $cl.FullName 2>&1 | Select-Object -First 1 | Write-Host
 
       - name: Build (x64 + x86 + installer)
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          # rebuild.ps1 会自己找 VS 与 SDK，找不到就抛错，这正是我们想要的失败方式
           & powershell -NoProfile -ExecutionPolicy Bypass -File tools\rebuild.ps1
           if ($LASTEXITCODE -ne 0) { throw "构建失败，退出码 $LASTEXITCODE" }
 

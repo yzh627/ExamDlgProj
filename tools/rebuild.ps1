@@ -109,6 +109,12 @@ Build-Config 'x86' $cl32 $ln32
 # ===== 重新打包加密题库：questions.txt -> questions.dat =====
 # 以前这一步要手动跑，忘了就会出现"题改了但学生机上还是旧题"。
 # 位置很关键：必须赶在编译安装程序之前 —— 安装程序会把 questions.dat 内嵌进去。
+#
+# CI 注意：这一步会实际运行 ExamDlgProj.exe /pack（GUI 子系统程序）。
+# 在 GitHub Actions 的 windows runner 上是可行的（runner 有桌面会话），
+# 但比本机慢，最多可能等满下面的 60 秒超时。
+# 若 CI 上这一步超时，说明 runner 上无法启动 GUI 子系统程序，
+# 届时可改用预先打包好的 questions.dat 提交到仓库（注意：那会让题库明文入库）。
 Write-Host "`n===== 重新打包加密题库 =====" -ForegroundColor Cyan
 $txtBank = Join-Path $proj 'questions.txt'
 if (Test-Path $txtBank) {
