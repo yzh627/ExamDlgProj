@@ -157,7 +157,15 @@ Write-Host "`n===== 编译安装程序 =====" -ForegroundColor Cyan
 $env:INCLUDE = "$($vc.Msvc)\include;$($vc.Msvc)\atlmfc\include;$($sdk.Root)\Include\$($sdk.Ver)\ucrt;$($sdk.Root)\Include\$($sdk.Ver)\shared;$($sdk.Root)\Include\$($sdk.Ver)\um"
 $env:LIB = "$($vc.Msvc)\lib\x64;$($vc.Msvc)\atlmfc\lib\x64;$($sdk.Root)\Lib\$($sdk.Ver)\ucrt\x64;$($sdk.Root)\Lib\$($sdk.Ver)\um\x64"
 Set-Location (Join-Path $proj '安装程序')
-$env:TMP = Join-Path $proj 'x64\Debug'; $env:TEMP = $env:TMP
+# 链接器把 .ilk / .pdb 等中间文件写到 TMP/TEMP 指向的目录。
+# 原来这里指向 x64\Debug —— 那个目录在本机可能碰巧存在（Debug 模式编过），
+# 但在干净的 CI 上不存在，链接器就报
+# "LNK1104: cannot open file '...\x64\Debug\lnk*.ilk'"。
+# 指向确实会被创建的输出目录，并用 -OUT 明确告诉链接器产物去哪。
+$setupOut = Join-Path $proj 'x64\Release'
+New-Item -ItemType Directory -Force -Path $setupOut | Out-Null
+$env:TMP = $setupOut
+$env:TEMP = $setupOut
 # 先编"专用卸载程序"（安装程序要把它内嵌进去，所以必须在 Setup.rc 之前编好）
 & $rc /nologo /fo "Uninst.res" "Uninst.rc"
 if ($LASTEXITCODE -ne 0) { throw "卸载程序资源编译失败" }
