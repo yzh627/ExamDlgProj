@@ -19,7 +19,13 @@ rem ============================================================
 
 cd /d "%~dp0"
 
+rem ★ 关键：路径必须转成正斜杠。
+rem   ssh -F "C:\Users\..." 里的反斜杠会被 ssh 当转义符吃掉，
+rem   结果变成 C:Users30601.sshconfig_examdlgproj 而找不到文件。
+rem   这个问题在开发时踩过一次，不要改回反斜杠。
 set "CFG=%USERPROFILE%\.ssh\config_examdlgproj"
+set "CFG_FWD=%USERPROFILE:\=/%/.ssh/config_examdlgproj"
+set "KEY_FWD=%USERPROFILE:\=/%/.ssh/examdlgproj_deploy_ed25519.pub"
 set "REMOTE=ssh://git@github-examdlgproj/yzh627/ExamDlgProj.git"
 
 if not exist "%CFG%" (
@@ -35,6 +41,8 @@ echo ============================================================
 echo   推送到 GitHub（SSH 方式）
 echo ============================================================
 echo.
+echo   配置：%CFG_FWD%
+echo.
 
 git status --short --branch
 echo.
@@ -42,7 +50,7 @@ echo.
 echo 正在推送...
 echo.
 
-git -c "core.sshCommand=ssh -F %CFG%" push -u "%REMOTE%" main
+git -c "core.sshCommand=ssh -F %CFG_FWD%" push -u "%REMOTE%" main
 
 if errorlevel 1 (
     echo.
@@ -51,11 +59,11 @@ if errorlevel 1 (
     echo ============================================================
     echo.
     echo   先试一次单独登录：
-    echo     ssh -F "%CFG%" -T git@github-examdlgproj
+    echo     ssh -F "%CFG_FWD%" -T git@github-examdlgproj
     echo.
     echo   如果提示 Permission denied，说明 GitHub 上没有对应公钥，
-    echo   把下面这个文件的全部内容加到 GitHub 即可：
-    echo     %USERPROFILE%\.ssh\examdlgproj_deploy_ed25519.pub
+    echo   把下面这个文件的全部内容加到 GitHub：
+    echo     %KEY_FWD%
     echo.
     echo   GitHub 页面：Settings -> SSH and GPG keys -> New SSH key
     echo.
