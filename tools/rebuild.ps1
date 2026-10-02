@@ -11,16 +11,24 @@ function Find-VcTools {
         if (-not (Test-Path $root)) { continue }
         foreach ($d1 in (Get-ChildItem $root -Directory -ErrorAction SilentlyContinue)) {
             foreach ($d2 in (Get-ChildItem $d1.FullName -Directory -ErrorAction SilentlyContinue)) {
-                $msvc = Join-Path $d2.FullName 'VC\Tools\MSVC'
-                if (Test-Path $msvc) {
-                    $ver = Get-ChildItem $msvc -Directory | Sort-Object Name -Descending | Select-Object -First 1
-                    if ($ver) {
+            $msvc = Join-Path $d2.FullName 'VC\Tools\MSVC'
+            if (Test-Path $msvc) {
+                # 同样只认 14.44.35207 这种真实版本号。
+                # MSVC 目录下偶有 preview/exp 子目录，靠字符串排序会选错。
+                $ver = Get-ChildItem $msvc -Directory |
+                       Where-Object { $_.Name -match '^\d+\.\d+' } |
+                       Sort-Object { [version]$_.Name } -Descending |
+                       Select-Object -First 1
+                if ($ver) {
+                    # 再确认编译器真的在，只有一个带 cl.exe 的版本才算数
+                    if (Test-Path (Join-Path $ver.FullName 'bin\Hostx64\x64\cl.exe')) {
                         return @{
                             Msvc = $ver.FullName
                             Vs   = $d2.FullName
                         }
                     }
                 }
+            }
             }
         }
     }
@@ -32,7 +40,10 @@ function Find-Sdk {
     if (-not (Test-Path $sdkRoot)) { $sdkRoot = "$env:ProgramFiles\Windows Kits\10" }
     $inc = Join-Path $sdkRoot 'Include'
     if (-not (Test-Path $inc)) { return $null }
-    $ver = Get-ChildItem $inc -Directory | Sort-Object Name -Descending | Select-Object -First 1
+    # 版本目录形如 10.0.22621.0，wdf 之类功能目录不认
+    $ver = Get-ChildItem $inc -Directory |
+           Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
+           Sort-Object Name -Descending | Select-Object -First 1
     if (-not $ver) { return $null }
     return @{ Root = $sdkRoot; Ver = $ver.Name }
 }
