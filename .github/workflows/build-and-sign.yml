@@ -119,18 +119,35 @@ jobs:
             "SignPath 未配置，产物保持未签名（不会中断构建）。"
           }
 
-      - name: Submit to SignPath for signing
+      # SignPath 只要求把文件作为 GitHub Artifact 上传，它自己会去拉。
+      # 必须是 upload-artifact v4：SignPath 的 action 需要 v4 产出的 artifact-id。
+      - name: Upload unsigned build for signing
+        id: upload-unsigned
         if: steps.signpath.outputs.enabled == 'true'
-        uses: signpath/github-action-submit-signing-request@v2.3
+        uses: actions/upload-artifact@v4
         with:
-          apiToken: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organizationId: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
-          projectSlug: ${{ secrets.SIGNPATH_PROJECT_SLUG }}
-          signingPolicySlug: ${{ secrets.SIGNPATH_SIGNING_POLICY_SLUG }}
+          name: unsigned-windows
+          path: out/*.exe
+          if-no-files-found: error
 
-      - name: Download signed binaries
+      # ★ 签名与下载由【同一个 action】完成 —— 不存在单独的 "get-signed-artifact" action。
+      #   之前误写了 signpath/github-action-get-signed-artifact，报"找不到匹配的版本"。
+      #   正确做法：submit-signing-request 配 wait-for-completion + output-artifact-directory，
+      #   它会阻塞等签名完成，然后把已签名的文件解包到指定目录。
+      - name: Sign with SignPath
         if: steps.signpath.outputs.enabled == 'true'
-        uses: signpath/github-action-get-signed-artifact@v1.2
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ secrets.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ secrets.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+          # GitHub 默认把 artifact 打成 zip，SignPath 的工件配置要求根元素就是 zip
+          parameters: |
+            Version: ${{ github.ref_name }}
 
       # 拿到签名产物后必须复验：SignPath 有可能因为策略不匹配而没签，
       # 静默通过"未签名"这一步是最危险的 —— 会被当成已签名发布出去。
@@ -138,28 +155,44 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $bad = 0
-          Get-ChildItem out -Filter *.exe | ForEach-Object {
-            $sig = Get-AuthenticodeSignature -LiteralPath $_.FullName
-            $ts  = if ($sig.TimeStamperCertificate) { '有时间戳' } else { '缺时间戳' }
-            if ($sig.Status -eq 'Valid') {
-              Write-Host "[OK]   $($_.Name)  $($sig.SignerCertificate.Subject)  $ts"
-            } else {
-              Write-Host "[未签] $($_.Name)  状态=$($sig.Status)"
-              $bad++
+          # 两个目录都要看：signed\ 是 SignPath 签好的，out\ 是原始未签名的。
+          # 只看 out\ 会永远显示"未签"，那不是问题，是看错了目录。
+          foreach ($dir in @('out', 'signed')) {
+            if (-not (Test-Path $dir)) { continue }
+            Write-Host ""
+            Write-Host "=== 目录 $dir ==="
+            Get-ChildItem $dir -Filter *.exe | ForEach-Object {
+              $sig = Get-AuthenticodeSignature -LiteralPath $_.FullName
+              $ts  = if ($sig.TimeStamperCertificate) { '有时间戳' } else { '缺时间戳' }
+              if ($sig.Status -eq 'Valid') {
+                Write-Host "[已签] $($_.Name)  签名者=$($sig.SignerCertificate.Subject)  $ts"
+              } else {
+                Write-Host "[未签] $($_.Name)  状态=$($sig.Status)"
+              }
             }
           }
-          # 未签名不算失败（还没配 SignPath 时是正常状态），
-          # 但必须在日志里显式列出来，不能让人误以为已经签过了。
-          if ($bad -gt 0) { Write-Warning "$bad 个文件未签名。若已配置 SignPath，请检查其拒绝日志。" }
+          # 有 signed 目录却一个都没签成功，才是真问题
+          if (Test-Path 'signed') {
+            $signedOk = @(Get-ChildItem signed -Filter *.exe | Where-Object {
+                (Get-AuthenticodeSignature -LiteralPath $_.FullName).Status -eq 'Valid' })
+            if ($signedOk.Count -eq 0) {
+              Write-Warning "signed 目录里没有任何有效签名。检查 SignPath 后台的签名请求是否被拒绝。"
+            } else {
+              Write-Host ""
+              Write-Host "签名成功 $($signedOk.Count) 个文件。"
+            }
+          }
+          Write-Host ""
           Write-Host "SHA256 清单："
           Get-ChildItem out -Filter *.exe | Get-FileHash -Algorithm SHA256 |
             Format-Table Hash, @{n='File';e={Split-Path $_.Path -Leaf}} -AutoSize
 
-      - name: Upload unsigned build (fallback)
+      - name: Upload build artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: out/*.exe
+          path: |
+            out/*.exe
+            signed/*.exe
           if-no-files-found: error
