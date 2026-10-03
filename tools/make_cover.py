@@ -68,18 +68,17 @@ def make_cover():
     W, H = 900, 383
     base = dgrad(W, H, C_TOP, C_BOT)
 
-    # 右上角点阵装饰（两层错位，产生层次）
+    # 左下角点阵装饰（避开右侧气泡，两者不叠在一起）
     dots = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     dd = ImageDraw.Draw(dots)
-    for row in range(9):
-        for col in range(14):
-            cx = 636 + col * 19
-            cy = 24 + row * 19
-            if cx > W - 12 or cy > H - 12:
+    for row in range(7):
+        for col in range(11):
+            cx = 616 + col * 19
+            cy = 286 + row * 19
+            if cx > W - 12 or cy > H - 10:
                 continue
-            # 越靠右下越淡
-            t = (col / 14) * 0.6 + (row / 9) * 0.4
-            a = int(70 * (1 - t))
+            t = (col / 11) * 0.5 + (row / 7) * 0.5
+            a = int(52 * (1 - t))
             if a <= 4:
                 continue
             r = 3 if (row + col) % 3 else 4
@@ -115,8 +114,8 @@ def make_cover():
     f_ttl  = ImageFont.truetype(F_BOLD, 40)
     f_sub  = ImageFont.truetype(F_REG, 17)
 
-    # 标签「计算机技能测试练习系统」
-    tag = "计算机技能测试练习系统"
+    # 标签：这篇讲的是下载与安装。用「／」分隔，避免「·」在小字号下糊成一团
+    tag = "下载 ／ 安装 ／ 常见问题"
     tw = d.textlength(tag, font=f_ver)
     px0, py0, px1, py1 = cx0 + 28, cy0 + 22, cx0 + 28 + int(tw) + 22, cy0 + 50
     d.rounded_rectangle([px0, py0, px1, py1], radius=14, fill=(232, 246, 238, 255))
@@ -129,8 +128,8 @@ def make_cover():
     # 分隔线
     d.line([cx0 + 30, cy0 + 180, cx0 + 150, cy0 + 180], fill=C_LINE, width=2)
 
-    # 副标题
-    d.text((cx0 + 28, cy0 + 196), "提交代码即自动判分 · 判题环境与省考场一致",
+    # 副标题：写读者带着疑问进来时最想知道的三件事
+    d.text((cx0 + 28, cy0 + 196), "怎么下载 ／ 怎么安装 ／ 蓝窗怎么处理",
            font=f_sub, fill=C_SUB)
 
     # 版本角标
@@ -144,43 +143,35 @@ def make_cover():
     wx0, wy0, wx1, wy1 = 636, 100, 838, 284
     win = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     wd = ImageDraw.Draw(win)
+    # 面板底：不透明度提高，否则底下的装饰会透上来，气泡看不清
     wd.rounded_rectangle([wx0, wy0, wx1, wy1], radius=12,
-                         fill=(255, 255, 255, 30), outline=(255, 255, 255, 70), width=1)
+                         fill=(14, 66, 44, 96), outline=(255, 255, 255, 60), width=1)
     # 标题栏三颗点
     for i in range(3):
         px_ = wx0 + 16 + i * 15
         py_ = wy0 + 15
-        wd.ellipse([px_ - 3, py_ - 3, px_ + 3, py_ + 3], fill=(255, 255, 255, 110))
-    # 代码行：宽度按窗口实际可用宽度算，绝不溢出
-    pad_l, pad_r = 20, 20
-    avail = (wx1 - pad_r) - (wx0 + pad_l)
-    rows = [0.66, 0.40, 0.78, 0.32, 0.56]
-    yy = wy0 + 40
-    for k, frac in enumerate(rows):
-        a = 150 if k % 2 == 0 else 96
-        wd.rounded_rectangle([wx0 + pad_l, yy, wx0 + pad_l + int(avail * frac), yy + 7],
-                             radius=3, fill=(255, 255, 255, a))
-        yy += 22
-    # 底部"通过"徽章：用矢量勾，不用字体（微软雅黑缺 ✓ 字形）
-    # 内缩以免被画布裁到，圆要完整可见
-    br = 26
-    bcx, bcy = wx1 + 2, wy1 - 4
-    if bcx + br > W - 6:
-        bcx = W - 6 - br
-    if bcy + br > H - 6:
-        bcy = H - 6 - br
-    wd.ellipse([bcx - br, bcy - br, bcx + br, bcy + br], fill=(255, 255, 255, 248))
-    # 手绘勾：两段折线
-    lw = max(4, br // 6)
-    p1 = (bcx - 13, bcy - 1)
-    p2 = (bcx - 4, bcy + 9)
-    p3 = (bcx + 14, bcy - 11)
-    wd.line([p1, p2], fill=(31, 122, 82), width=lw)
-    wd.line([p2, p3], fill=(31, 122, 82), width=lw)
-    # 勾的两端加圆头
-    for pt in (p1, p2, p3):
-        wd.ellipse([pt[0] - lw // 2, pt[1] - lw // 2, pt[0] + lw // 2, pt[1] + lw // 2],
-                   fill=(31, 122, 82))
+        wd.ellipse([px_ - 3, py_ - 3, px_ + 3, py_ + 3], fill=(255, 255, 255, 100))
+
+    # 三个问答气泡：上面两个是"问"，下面一个是"答"。
+    # 呼应文章"解答疑惑"的主题，比代码窗口更贴题。
+    pad_l = 18
+    avail = (wx1 - 16) - (wx0 + pad_l)
+    bubbles = [
+        # (左, 上, 宽比例, 是否带尾巴, 透明alpha)
+        (wx0 + pad_l, wy0 + 38, 0.86, True, 105),   # 问
+        (wx0 + pad_l + 26, wy0 + 88, 0.62, True, 85),   # 问（缩进，像追问）
+        (wx0 + pad_l, wy0 + 140, 0.92, False, 230),  # 答（更长、更实）
+    ]
+    for bx, by, frac, tail, a in bubbles:
+        bw = int(avail * frac)
+        bh = 30
+        wd.rounded_rectangle([bx, by, bx + bw, by + bh],
+                             radius=9, fill=(255, 255, 255, a))
+        if tail:
+            # 尾巴：向下的小三角
+            tx = bx + 16
+            wd.polygon([(tx, by + bh - 1), (tx + 11, by + bh - 1), (tx + 2, by + bh + 9)],
+                       fill=(255, 255, 255, a))
     base = Image.alpha_composite(base, win)
 
     p = os.path.join(OUT, "封面-头图900x383.png")
@@ -201,12 +192,17 @@ def make_square():
     f_ttl = ImageFont.truetype(F_BOLD, 44)
     f_sub = ImageFont.truetype(F_REG, 19)
     f_ver = ImageFont.truetype(F_BOLD, 16)
+    f_tag = ImageFont.truetype(F_BOLD, 15)
 
-    d.text((44, 96), "对口升学", font=f_ttl, fill=(255, 255, 255, 255))
-    d.text((44, 152), "计算机练习系统", font=f_ttl, fill=(255, 255, 255, 255))
+    # 标签
+    d.text((44, 54), "下载 ／ 安装 ／ 常见问题", font=f_tag, fill=(255, 255, 255, 190))
 
-    d.line([46, 224, 130, 224], fill=(255, 255, 255, 130), width=2)
-    d.text((44, 242), "提交代码即自动判分", font=f_sub, fill=(255, 255, 255, 220))
+    d.text((44, 110), "对口升学", font=f_ttl, fill=(255, 255, 255, 255))
+    d.text((44, 166), "计算机练习系统", font=f_ttl, fill=(255, 255, 255, 255))
+
+    d.line([46, 240, 130, 240], fill=(255, 255, 255, 130), width=2)
+    d.text((44, 258), "怎么下载 ／ 怎么安装 ／ 蓝窗怎么办",
+           font=f_sub, fill=(255, 255, 255, 225))
 
     # 版本角标：底色必须是深色，否则白字画在白底上看不见
     tw = d.textlength("v1.0.0", font=f_ver)
